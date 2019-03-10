@@ -1,0 +1,31 @@
+alpha = { 'a'..'z' | 'A'..'Z' }
+digit = { '0'..'9' }
+ident = { alpha ~ (alpha | digit)* }
+field = { ident | ("\"" ~ ((!"\"" ~ ANY) | "\"\"") ~ "\"") }
+
+integer = { ("+" | "-")? ~ digit+ }
+real = { integer ~ ("." ~ digit+)? }
+string = { "'" ~ ((!"'" ~ ANY) | "''") ~ "'" }
+boolean = {^"true" | ^"false" }
+unit = @{ (^"ms" | ^"millisecond" | ^"sec" | ^"second" | ^"min" | ^"minute" | ^"hr" | ^"hour") ~ ^"s"? }
+time = { real ~ unit }
+WHITESPACE = _{ " " | "\r" | "\n" | "\t" }
+
+function_call = { field ~ "(" ~ (expr ~ (", " ~ expr)*)? ~ ")" }
+factor = { real | integer | string | function_call | field | ("(" ~ expr ~ ")") }
+term = { factor ~ (("*" | "/") ~ factor)* }
+expr = { factor ~ (("+" | "-") ~ factor)* }
+
+comparison_operator = { "<=" | "<" | ">=" | ">" | "=" | "!=" }
+comparison = { expr ~ comparison_operator ~ expr }
+
+boolean_factor = { boolean | comparison | ("(" ~ boolean_expr ~ ")") | (^"not" ~ boolean_expr) }
+boolean_term = { boolean_factor ~ (^"and" ~ boolean_factor)* }
+boolean_expr = { boolean_term ~ ((^"or" | ^"xor") ~ boolean_term)* }
+
+for_condition = { (comparison_operator ~ time) | (comparison_operator ~ integer ~ "times") }
+trilean_factor = { boolean_factor | ("(" ~ trilean_expr ~ ")") }
+trilean_term = { trilean_factor ~ (^"for" ~ time ~ for_condition?)? }
+trilean_expr = { trilean_term ~ ((^"andthen" | ^"and" | ^"or") ~ trilean_term)* }
+
+pattern = { SOI ~ trilean_expr ~ EOI }
